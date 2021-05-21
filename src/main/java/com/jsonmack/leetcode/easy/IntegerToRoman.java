@@ -1,165 +1,116 @@
 package com.jsonmack.leetcode.easy;
 
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author Jason MacKeigan
  */
 public class IntegerToRoman {
 
-    // III = 3
-    // IV = 4
-    // IX = 9
-    // LVIII = 58
-    // MCMXCIV = 1994
+    private enum RomanNumeral {
+        I(0, 1),
+        V(1, 5),
+        X(2, 10),
+        L(3, 50),
+        C(4, 100),
+        D(5, 500),
+        M(6, 1000);
 
-    //    I             1
-    //    V             5
-    //    X             10
-    //    L             50
-    //    C             100
-    //    D             500
-    //    M             1000
+        private static final Map<Integer, RomanNumeral> NUMERAL_BY_VALUE =
+                Map.copyOf(EnumSet.allOf(RomanNumeral.class)
+                        .stream()
+                        .collect(Collectors.toMap(RomanNumeral::getValue, Function.identity())));
 
-    // constraints
-    //      { i <= i < 4000 }
-    //
+        private static final Map<Integer, RomanNumeral> NUMERAL_BY_ORDER =
+                Map.copyOf(EnumSet.allOf(RomanNumeral.class)
+                        .stream()
+                        .collect(Collectors.toMap(RomanNumeral::getOrder, Function.identity())));
 
-    // i = 1994
-    //M = i / 1000 = 1
-    // i = 1994 - 1000 = 994
-    // i / 500 = 1
-    // i = 995 - 500 = 494
-    // i / 100 .
-    // ...
+        private final int order;
 
-         // 1885
-                // 1889
+        private final int value;
 
-                // Max/Step
+        RomanNumeral(int order, int value) {
+            this.order = order;
+            this.value = value;
+        }
 
-                // Number "Chunks"
-                // 1000 - M
-                // 900 - CM
-                // 500 - D
-                // 400 - CD
-                // 100 - C
-                // 90 - XC
-                // 50 - L
-                // 40 - XL
-                // 10 - X
-                // 9 - IX
-                // 5 - V
-                // 4 - IV
-                // 1 - I
+        private static RomanNumeral forValue(int value) {
+            RomanNumeral numeral = NUMERAL_BY_VALUE.get(value);
 
-                // 1885 - M     DCCC    LXXX    V
-                // 1889 - M     DCCC    LXXX    IX
-                //        1000  800     80      5
-                //        1000  800     80      9
+            if (numeral == null) {
+                throw new IllegalArgumentException("Roman numeral does not exist for value: " + value);
+            }
+            return numeral;
+        }
 
+        private static RomanNumeral offset(RomanNumeral numeral, int offset) {
+            RomanNumeral offsetNumeral = NUMERAL_BY_ORDER.get(numeral.order + offset);
 
-                // if number == 1000    M
-                // if number == 900     CM
-                // if number == 800     DCCC
-                // if number == 700     DCC
-                // if number == 600     DC
+            if (offsetNumeral == null) {
+                throw new IllegalArgumentException("Roman numeral does not exist for numeral at offset: [" + numeral + ", " + offset + "]");
+            }
+            return offsetNumeral;
+        }
 
-                // if number == 500     D
-                // if number == 400     CD
-                // if number == 300     CCC
-                // if number == 200     CC
-                // if number == 100     C
+        public int getOrder() {
+            return order;
+        }
 
-                // if number > 90 < 100
-                // if number > 80 < 90
-
-    private static final Map<Integer, Character> ROMAN_CHARACTERS = Map.of(
-            1, 'I',
-            5, 'V',
-            10, 'X',
-            50, 'L',
-            100, 'C',
-            500, 'D',
-            1000, 'M'
-    );
-
-    public static void main(String[] args) {
-        String result = new IntegerToRoman().integerToRoman(1994);
-
-        System.out.println(result);
+        public int getValue() {
+            return value;
+        }
     }
 
-    // 9  9  4
-    // CM XC IV
+    public String integerToRoman(int number) {
+        List<RomanNumeral> romanNumerals = new ArrayList<>();
 
-    //    I can be placed before V (5) and X (10) to make 4 and 9.
-    //    X can be placed before L (50) and C (100) to make 40 and 90.
-    //    C can be placed before D (500) and M (1000) to make 400 and 900.
-
-    // LVIII
-
-    public String integerToRoman(int number) {//1994
-        StringBuilder roman = new StringBuilder();
-
-        int currentChunk = 1000;
-
-        int step = 0;
-
-        int nineBound = 900;
-
-        int fourBound = 400;
+        RomanNumeral romanNumeral = RomanNumeral.forValue(1000);
 
         while (number > 0) {
-            int occurrences = number / currentChunk; // 1
+            int occurrences = number / romanNumeral.value;
 
-            int romanNumericalValue = (currentChunk * occurrences); // 1000
+            if (occurrences == 0) {
+                romanNumeral = RomanNumeral.offset(romanNumeral, -2);
+                continue;
+            }
+            int value = (occurrences * romanNumeral.value);
 
-            int value = (occurrences * romanNumericalValue);
+            if (occurrences == 9) {
+                romanNumerals.add(romanNumeral);
+                romanNumerals.add(RomanNumeral.offset(romanNumeral, 2));
+            } else if (occurrences > 5 && occurrences < 9) {
+                romanNumerals.add(RomanNumeral.offset(romanNumeral, 1));
 
-            //  1       5       10      50      100     500     1000
-            //  I       V       X       L       C       D       M
-            //  /\      /\      /\      /\      /\      /\      /\
-            //                                         CD       D
-            if (number >= nineBound && number > currentChunk) {
-                number -= nineBound;
-                if (nineBound == 900) {
-                    roman.append("CM");
-                } else if (nineBound == 90) {
-                    roman.append("XC");
-                } else if (nineBound == 9) {
-                    roman.append("IX");
-                    }
-            } else if (number >= fourBound && number > currentChunk) {
-                number -= fourBound;
-                if (fourBound == 400) {
-                    roman.append("CD");
-                } else if (fourBound == 40) {
-                    roman.append("XL");
-                } else if (fourBound == 4) {
-                    roman.append("IV");
+                for (int i = 0; i < occurrences - 5; i++) {
+                    romanNumerals.add(romanNumeral);
+                }
+            } else if (occurrences == 5) {
+                romanNumerals.add(RomanNumeral.offset(romanNumeral, 1));
+            } else if (occurrences == 4) {
+                romanNumerals.add(romanNumeral);
+                romanNumerals.add(RomanNumeral.offset(romanNumeral, 1));
+            } else if (occurrences > 0) {
+                for (int i = 0; i < occurrences; i++) {
+                    romanNumerals.add(romanNumeral);
                 }
             } else {
-                if (romanNumericalValue == 0) {
-                    break;
-                }
-                number -= value;
-
-                System.out.println(romanNumericalValue);
-
-                char character = ROMAN_CHARACTERS.get(romanNumericalValue);
-
-                roman.append(character);
+                throw new IllegalStateException("occurrance must be within 1 and 9 (inclusive): " + occurrences);
             }
-            int division = step++ % 2 == 1 ? 5 : 2;
+            number -= value;
 
-            if (division == 2 && step - 1 != 0) {
-                nineBound /= 10;
-                fourBound /= 10;
+            if (number <= 0) {
+                break;
             }
-            currentChunk /= division;
+            romanNumeral = RomanNumeral.offset(romanNumeral, -2);
         }
-        return roman.toString();
+        return romanNumerals.stream()
+                .map(RomanNumeral::name)
+                .collect(Collectors.joining());
     }
 }
