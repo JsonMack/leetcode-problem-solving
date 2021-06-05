@@ -1,6 +1,5 @@
 package com.jsonmack.leetcode.easy;
 
-import javax.swing.tree.TreeNode;
 import java.util.*;
 
 /**
@@ -25,7 +24,6 @@ public class BinaryTreeInorderTraversal {
         }
         return result;
     }
-
 
     public static class TreeNode {
 
