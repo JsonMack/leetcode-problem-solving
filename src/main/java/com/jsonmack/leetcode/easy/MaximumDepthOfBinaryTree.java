@@ -1,6 +1,5 @@
 package com.jsonmack.leetcode.easy;
 
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
